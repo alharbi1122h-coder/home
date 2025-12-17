@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مصاريف البناء</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<style>
+:root{
+  --bg:#eef1f6;
+  --card:#ffffff;
+  --border:#dbe1ea;
+  --text:#0f172a;
+  --muted:#64748b;
+  --primary:#1e40af;
+  --primary-soft:#e0e7ff;
+  --danger:#b91c1c;
+  --success:#15803d;
+  --radius:12px;
+  --shadow:0 6px 18px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Tahoma,Arial;
+  background:var(--bg);
+  color:var(--text);
+}
+header{
+  background:#fff;
+  border-bottom:1px solid var(--border);
+  padding:16px;
+  box-shadow:0 2px 6px rgba(0,0,0,.05);
+}
+header h1{margin:0;font-size:20px}
+header span{font-size:12px;color:var(--muted)}
+.container{
+  max-width:1200px;
+  margin:auto;
+  padding:20px;
+}
+.grid{
+  display:grid;
+  gap:20px;
+}
+@media(min-width:900px){
+  .grid{grid-template-columns:360px 1fr}
+}
+.card{
+  background:var(--card);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:16px;
+}
+.card h3{margin:0 0 10px 0}
+input,select,textarea,button{
+  width:100%;
+  padding:12px;
+  margin-bottom:8px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  font-size:14px;
+}
+textarea{min-height:90px}
+button{cursor:pointer;border:none;font-weight:700}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-secondary{background:var(--primary-soft);color:var(--primary)}
+.btn-danger{background:var(--danger);color:#fff}
+.list-item{
+  border-bottom:1px dashed var(--border);
+  padding:8px 0;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.expense{
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:12px;
+  margin-bottom:10px;
+}
+small{color:var(--muted)}
+.actions{display:flex;gap:8px;margin-top:8px}
+.actions button{flex:1}
+.stat{
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:12px;
+  margin-bottom:10px;
+}
+footer{
+  text-align:center;
+  font-size:12px;
+  color:var(--muted);
+  margin-top:20px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>🏗️ مصاريف البناء</h1>
+  <span>لوحة إدارة كاملة للمشروع</span>
+</header>
+
+<div class="container">
+<div class="grid">
+
+<!-- ===== Sidebar ===== -->
+<div>
+
+<div class="card">
+  <h3>📝 ملاحظات المشروع</h3>
+  <textarea id="projectNotes"></textarea>
+  <button class="btn-primary" onclick="saveNotes()">💾 حفظ</button>
+</div>
+
+<br>
+
+<div class="card">
+  <h3>📦 إدارة البنود</h3>
+  <input id="newCategory" placeholder="اسم البند">
+  <button class="btn-primary" onclick="addCategory()">➕ إضافة بند</button>
+  <div id="categoriesList"></div>
+</div>
+
+</div>
+
+<!-- ===== Main ===== -->
+<div>
+
+<div class="card">
+  <h3>📊 الملخص</h3>
+  <div class="stat">
+    <strong>💰 المجموع الكلي:</strong>
+    <span id="totalAll">0</span>
+  </div>
+  <div id="perCategory"></div>
+  <button class="btn-secondary" onclick="exportExcel()">📥 تصدير Excel</button>
+</div>
+
+<br>
+
+<div class="card">
+  <h3>➕ إضافة / تعديل مصروف</h3>
+  <form id="expenseForm">
+    <input type="date" id="date" required>
+    <select id="categorySelect" required></select>
+    <input type="number" id="amount" placeholder="المبلغ" required>
+    <input id="vendor" placeholder="المورد">
+    <textarea id="description" placeholder="الوصف"></textarea>
+    <button class="btn-primary" id="saveBtn">💾 حفظ</button>
+    <button type="button" class="btn-secondary" id="cancelBtn" style="display:none" onclick="cancelEdit()">إلغاء</button>
+  </form>
+</div>
+
+<br>
+
+<div class="card">
+  <h3>📋 المصاريف</h3>
+  <div id="expensesList"></div>
+</div>
+
+</div>
+</div>
+
+<footer>© نظام مصاريف البناء — نسخة مستقرة</footer>
+
+<script>
+const SUPABASE_URL="https://iuqbkqxyjendpgtlvwem.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFub24iLCJpYXQiOjE3NjQ4MjYyOTUsImV4cCI6MjA4MDQwMjI5NX0.puUnNqutG0IuyRwJ3m8d2g4i4RkSn4kJZODCu41aBBw";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let expenses=[], editId=null;
+date.value=new Date().toISOString().split("T")[0];
+
+async function loadAll(){
+  await loadNotes();
+  await loadCategories();
+  await loadExpenses();
+}
+
+async function loadNotes(){
+  const {data}=await sb.from("project_notes").select("*").limit(1).single();
+  if(data) projectNotes.value=data.notes||"";
+}
+async function saveNotes(){
+  await sb.from("project_notes").upsert({id:1,notes:projectNotes.value});
+  alert("تم حفظ الملاحظات");
+}
+
+async function loadCategories(){
+  const {data}=await sb.from("categories").select("*").order("name");
+  categoriesList.innerHTML="";
+  categorySelect.innerHTML="";
+  data.forEach(c=>{
+    categorySelect.add(new Option(c.name,c.id));
+    categoriesList.innerHTML+=`
+      <div class="list-item">
+        <span>${c.name}</span>
+        <button class="btn-danger" onclick="deleteCategory('${c.id}')">حذف</button>
+      </div>`;
+  });
+}
+async function addCategory(){
+  if(!newCategory.value) return;
+  await sb.from("categories").insert({name:newCategory.value});
+  newCategory.value="";
+  loadCategories();
+}
+async function deleteCategory(id){
+  if(!confirm("حذف البند؟")) return;
+  await sb.from("categories").delete().eq("id",id);
+  loadCategories();
+}
+
+async function loadExpenses(){
+  const {data}=await sb.from("expenses").select("*").order("expense_date",{ascending:false});
+  expenses=data||[];
+  renderExpenses();
+  renderStats();
+}
+
+function renderExpenses(){
+  expensesList.innerHTML="";
+  expenses.forEach(e=>{
+    expensesList.innerHTML+=`
+      <div class="expense">
+        <strong>${e.amount} ريال</strong><br>
+        <small>📅 ${e.expense_date}</small><br>
+        <small>${e.vendor||""}</small>
+        <div>${e.description||""}</div>
+        <div class="actions">
+          <button class="btn-secondary" onclick="editExpense('${e.id}')">تعديل</button>
+          <button class="btn-danger" onclick="deleteExpense('${e.id}')">حذف</button>
+        </div>
+      </div>`;
+  });
+}
+
+function renderStats(){
+  let total=0, map={};
+  expenses.forEach(e=>{
+    total+=Number(e.amount||0);
+    map[e.category_id]=(map[e.category_id]||0)+Number(e.amount||0);
+  });
+  totalAll.textContent=total+" ريال";
+  perCategory.innerHTML="";
+  for(const k in map){
+    perCategory.innerHTML+=`
+      <div class="stat">
+        بند: ${k}<br>
+        مجموع: ${map[k]} ريال
+      </div>`;
+  }
+}
+
+function editExpense(id){
+  const e=expenses.find(x=>x.id===id);
+  editId=id;
+  date.value=e.expense_date;
+  categorySelect.value=e.category_id;
+  amount.value=e.amount;
+  vendor.value=e.vendor||"";
+  description.value=e.description||"";
+  saveBtn.textContent="حفظ التعديل";
+  cancelBtn.style.display="block";
+}
+function cancelEdit(){
+  editId=null;
+  expenseForm.reset();
+  date.value=new Date().toISOString().split("T")[0];
+  saveBtn.textContent="💾 حفظ";
+  cancelBtn.style.display="none";
+}
+async function deleteExpense(id){
+  if(!confirm("حذف المصروف؟")) return;
+  await sb.from("expenses").delete().eq("id",id);
+  loadExpenses();
+}
+expenseForm.addEventListener("submit",async e=>{
+  e.preventDefault();
+  const payload={
+    expense_date:date.value,
+    category_id:categorySelect.value,
+    amount:+amount.value,
+    vendor:vendor.value,
+    description:description.value
+  };
+  if(editId){
+    await sb.from("expenses").update(payload).eq("id",editId);
+  }else{
+    await sb.from("expenses").insert(payload);
+  }
+  cancelEdit();
+  loadExpenses();
+});
+
+function exportExcel(){
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(expenses),"المصاريف");
+  XLSX.writeFile(wb,"expenses.xlsx");
+}
+
+document.addEventListener("DOMContentLoaded",loadAll);
+</script>
+
+</body>
+</html>
