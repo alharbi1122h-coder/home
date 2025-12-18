@@ -42,7 +42,7 @@ body{
   backdrop-filter:blur(12px);
 }
 
-/* ========== ACCORDION IOS ========== */
+/* ===== Accordion iOS ===== */
 .accordion .card-header{
   display:flex;justify-content:space-between;cursor:pointer;
 }
@@ -56,15 +56,16 @@ body{
   max-height:6000px;opacity:1;
 }
 
-/* ========== UI ========== */
+/* ===== UI ===== */
 .card-title{font-weight:900}
 .card-desc{font-size:12px;color:var(--muted)}
 .hr{height:1px;background:var(--border);margin:14px 0}
-.input,select{
+.input,select,textarea{
   width:100%;padding:14px;border-radius:14px;
   border:1px solid var(--border);
   background:transparent;color:var(--text);
 }
+textarea{min-height:90px}
 .label{font-size:12px;font-weight:800;margin:8px 0 6px}
 .btn{
   padding:12px 14px;border:none;border-radius:14px;
@@ -79,8 +80,22 @@ body{
 /* ===== Focus Mode ===== */
 .focus .accordion:not(#secAddEdit){display:none}
 
-/* ===== Chart ===== */
-canvas{width:100%;max-height:260px}
+/* ===== Expense Card ===== */
+.expense{
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:12px;
+  margin-bottom:10px;
+  background:rgba(255,255,255,.08);
+}
+.expense .top{
+  display:flex;justify-content:space-between;font-weight:800
+}
+.expense .meta{
+  font-size:12px;color:var(--muted);margin-top:6px
+}
+.actions{display:flex;gap:8px;margin-top:8px}
+.actions .btn{flex:1}
 </style>
 </head>
 
@@ -101,8 +116,8 @@ canvas{width:100%;max-height:260px}
 <div class="card accordion" id="secNotes">
   <div class="card-header" onclick="toggleAccordion('secNotes')">
     <div>
-      <div class="card-title">📝 ملاحظات</div>
-      <div class="card-desc">ملاحظات المشروع</div>
+      <div class="card-title">📝 ملاحظات المشروع</div>
+      <div class="card-desc">ملاحظات عامة</div>
     </div><div class="arrow">⬇️</div>
   </div>
   <div class="accordion-content">
@@ -136,7 +151,7 @@ canvas{width:100%;max-height:260px}
 <div class="card accordion open" id="secAddEdit">
   <div class="card-header" onclick="toggleAccordion('secAddEdit')">
     <div>
-      <div class="card-title">➕ إضافة مصروف</div>
+      <div class="card-title">➕ إضافة / تعديل مصروف</div>
       <div class="card-desc">القسم الرئيسي</div>
     </div><div class="arrow">⬇️</div>
   </div>
@@ -144,26 +159,21 @@ canvas{width:100%;max-height:260px}
     <form id="expenseForm">
       <label class="label">التاريخ</label>
       <input type="date" id="date" class="input">
+
       <label class="label">البند</label>
       <select id="categorySelect" class="input"></select>
+
       <label class="label">المبلغ</label>
       <input type="number" id="amount" class="input">
+
+      <label class="label">المورد</label>
+      <input type="text" id="vendor" class="input" placeholder="مثال: مؤسسة فلان">
+
+      <label class="label">ملاحظات المصروف</label>
+      <textarea id="description" class="input" placeholder="مثال: صبة خرسانة للدور الأرضي"></textarea>
+
       <button class="btn sm">💾 حفظ</button>
     </form>
-  </div>
-</div>
-
-<div style="height:12px"></div>
-
-<div class="card accordion" id="secChart">
-  <div class="card-header" onclick="toggleAccordion('secChart')">
-    <div>
-      <div class="card-title">📊 رسم شهري</div>
-      <div class="card-desc">تحليل المصاريف</div>
-    </div><div class="arrow">⬇️</div>
-  </div>
-  <div class="accordion-content">
-    <canvas id="chart"></canvas>
   </div>
 </div>
 
@@ -173,7 +183,7 @@ canvas{width:100%;max-height:260px}
   <div class="card-header" onclick="toggleAccordion('secExpenses')">
     <div>
       <div class="card-title">📋 المصاريف</div>
-      <div class="card-desc">عرض القائمة</div>
+      <div class="card-desc">عرض المصاريف</div>
     </div><div class="arrow">⬇️</div>
   </div>
   <div class="accordion-content">
@@ -192,33 +202,40 @@ const sb = supabase.createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1cWJrcXh5amVuZHBndGx2d2VtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4MjYyOTUsImV4cCI6MjA4MDQwMjI5NX0.puUnNqutG0IuyRwJ3m8d2g4i4RkSn4kJZODCu41aBBw"
 );
 
-let cache=[];
+let cache=[], editingId=null;
 
-/* ========== IOS ACCORDION + SAVE STATE ========== */
+/* ===== Accordion (iOS) ===== */
 function toggleAccordion(id){
   document.querySelectorAll(".accordion").forEach(a=>{
     if(a.id!==id) a.classList.remove("open");
   });
-  const el=document.getElementById(id);
-  el.classList.toggle("open");
-  localStorage.setItem("openSection", id);
+  document.getElementById(id).classList.toggle("open");
+  localStorage.setItem("openSection",id);
 }
 
-/* ========== THEME ========== */
+/* ===== Theme / Focus ===== */
 function toggleTheme(){
   document.body.classList.toggle("light");
   localStorage.setItem("theme",
     document.body.classList.contains("light")?"light":"dark");
 }
-
-/* ========== FOCUS MODE ========== */
 function toggleFocus(){
   document.body.classList.toggle("focus");
 }
 
-/* ========== DATA ========== */
+/* ===== Init helpers ===== */
 date.value=new Date().toISOString().split("T")[0];
 
+/* ===== Notes ===== */
+async function saveNotes(){
+  await sb.from("project_notes").upsert({id:1,notes:projectNotes.value});
+}
+async function loadNotes(){
+  const {data}=await sb.from("project_notes").select("*").single();
+  if(data) projectNotes.value=data.notes||"";
+}
+
+/* ===== Categories ===== */
 async function loadCategories(){
   const {data}=await sb.from("categories").select("*").order("name");
   categorySelect.innerHTML="";
@@ -228,7 +245,6 @@ async function loadCategories(){
     categoriesList.innerHTML+=`<div>${c.name}</div>`;
   });
 }
-
 async function addCategory(){
   if(!newCategoryName.value) return;
   await sb.from("categories").insert({name:newCategoryName.value});
@@ -236,60 +252,77 @@ async function addCategory(){
   loadCategories();
 }
 
+/* ===== Expenses ===== */
 async function loadExpenses(){
   const {data}=await sb.from("expenses")
-    .select("expense_date,amount,categories(name)")
-    .order("expense_date");
+    .select("*,categories(name)")
+    .order("expense_date",{ascending:false});
   cache=data||[];
   renderExpenses();
-  drawChart();
 }
-
 function renderExpenses(){
   expensesList.innerHTML="";
   cache.forEach(e=>{
-    expensesList.innerHTML+=`<div>${e.expense_date} — ${e.amount} ريال</div>`;
+    expensesList.innerHTML+=`
+      <div class="expense">
+        <div class="top">
+          <span>${e.amount} ريال</span>
+          <span>${e.categories?.name||""}</span>
+        </div>
+        <div class="meta">📅 ${e.expense_date}</div>
+        ${e.vendor?`<div class="meta">🏷️ ${e.vendor}</div>`:""}
+        ${e.description?`<div class="meta">📝 ${e.description}</div>`:""}
+        <div class="actions">
+          <button class="btn sm secondary" onclick="editExpense('${e.id}')">تعديل</button>
+          <button class="btn sm danger" onclick="deleteExpense('${e.id}')">حذف</button>
+        </div>
+      </div>`;
   });
 }
 
-expenseForm.onsubmit=async e=>{
-  e.preventDefault();
-  await sb.from("expenses").insert({
+function editExpense(id){
+  const e=cache.find(x=>x.id===id);
+  editingId=id;
+  date.value=e.expense_date;
+  categorySelect.value=e.category_id;
+  amount.value=e.amount;
+  vendor.value=e.vendor||"";
+  description.value=e.description||"";
+  toggleAccordion("secAddEdit");
+}
+
+expenseForm.onsubmit=async ev=>{
+  ev.preventDefault();
+  const payload={
     expense_date:date.value,
     category_id:categorySelect.value,
-    amount:Number(amount.value)
-  });
-  expenseForm.reset();date.value=new Date().toISOString().split("T")[0];
+    amount:Number(amount.value),
+    vendor:vendor.value,
+    description:description.value
+  };
+  editingId
+    ? await sb.from("expenses").update(payload).eq("id",editingId)
+    : await sb.from("expenses").insert(payload);
+  editingId=null;
+  expenseForm.reset();
+  date.value=new Date().toISOString().split("T")[0];
   loadExpenses();
 };
 
-/* ========== CHART ========== */
-function drawChart(){
-  const ctx=document.getElementById("chart").getContext("2d");
-  ctx.clearRect(0,0,400,300);
-  const months={};
-  cache.forEach(e=>{
-    const m=e.expense_date.slice(0,7);
-    months[m]=(months[m]||0)+Number(e.amount);
-  });
-  const keys=Object.keys(months);
-  const max=Math.max(...Object.values(months),1);
-  keys.forEach((k,i)=>{
-    const h=(months[k]/max)*200;
-    ctx.fillStyle="#60a5fa";
-    ctx.fillRect(40+i*60,240-h,30,h);
-    ctx.fillText(k,40+i*60,260);
-  });
+async function deleteExpense(id){
+  if(confirm("حذف المصروف؟")){
+    await sb.from("expenses").delete().eq("id",id);
+    loadExpenses();
+  }
 }
 
-/* INIT */
+/* ===== INIT ===== */
 (function(){
-  const t=localStorage.getItem("theme");
-  if(t==="light") document.body.classList.add("light");
-
+  if(localStorage.getItem("theme")==="light")
+    document.body.classList.add("light");
   const open=localStorage.getItem("openSection")||"secAddEdit";
   document.getElementById(open)?.classList.add("open");
-
+  loadNotes();
   loadCategories();
   loadExpenses();
 })();
