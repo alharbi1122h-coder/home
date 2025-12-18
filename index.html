@@ -1,200 +1,128 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>مصاريف البناء</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
+/* ================= THEME ================= */
 :root{
-  --bg1:#111827;
-  --bg2:#1f2937;
-
-  --card:rgba(255,255,255,.14);
-  --card2:rgba(255,255,255,.18);
-  --border:rgba(255,255,255,.22);
-
-  --text:#f9fafb;
-  --muted:#cbd5e1;
-
-  --primary:#60a5fa;
-  --primary2:#3b82f6;
-  --danger:#ef4444;
-  --ok:#22c55e;
-
+  --bg1:#111827; --bg2:#1f2937;
+  --card:#ffffff22; --border:#ffffff33;
+  --text:#f9fafb; --muted:#cbd5e1;
+  --primary:#60a5fa; --primary2:#3b82f6;
+  --danger:#ef4444; --ok:#22c55e;
   --radius:18px;
-  --shadow:0 18px 45px rgba(0,0,0,.35);
+}
+.light{
+  --bg1:#f8fafc; --bg2:#e5e7eb;
+  --card:#00000010; --border:#00000022;
+  --text:#0f172a; --muted:#475569;
 }
 
 *{box-sizing:border-box}
 body{
-  margin:0;
-  font-family:system-ui,Tahoma,Arial;
+  margin:0;font-family:system-ui,Tahoma,Arial;
+  background:linear-gradient(180deg,var(--bg1),var(--bg2));
   color:var(--text);
-  background:
-    radial-gradient(1200px 800px at 10% 10%, rgba(96,165,250,.18), transparent 70%),
-    radial-gradient(1000px 700px at 90% 20%, rgba(34,197,94,.12), transparent 70%),
-    linear-gradient(180deg,var(--bg1),var(--bg2));
 }
-
 .container{max-width:1200px;margin:auto;padding:18px}
 .layout{display:grid;gap:16px}
 @media(min-width:980px){.layout{grid-template-columns:360px 1fr}}
 
 .card{
-  background:linear-gradient(180deg,var(--card2),var(--card));
+  background:var(--card);
   border:1px solid var(--border);
   border-radius:var(--radius);
-  box-shadow:var(--shadow);
   padding:16px;
-  backdrop-filter: blur(12px);
+  backdrop-filter:blur(12px);
 }
 
-/* ===== Accordion iOS ===== */
+/* ========== ACCORDION IOS ========== */
 .accordion .card-header{
-  cursor:pointer;
-  display:flex;
-  justify-content:space-between;
-  gap:12px;
-  padding:10px;
-  border-radius:14px;
+  display:flex;justify-content:space-between;cursor:pointer;
 }
-.accordion .card-header:active{
-  transform:scale(.995);
-}
-.arrow{
-  font-size:18px;
-  transition:.25s;
-}
-.accordion.open .arrow{
-  transform:rotate(180deg);
-}
+.arrow{transition:.25s}
+.accordion.open .arrow{transform:rotate(180deg)}
 .accordion-content{
-  max-height:0;
-  overflow:hidden;
-  opacity:0;
-  transition:max-height .35s ease, opacity .25s ease;
+  max-height:0;overflow:hidden;opacity:0;
+  transition:.35s;
 }
 .accordion.open .accordion-content{
-  max-height:5000px;
-  opacity:1;
+  max-height:6000px;opacity:1;
 }
 
-/* ===== UI ===== */
-.card-title{font-size:16px;font-weight:900}
-.card-desc{font-size:12px;color:var(--muted);margin-top:4px}
+/* ========== UI ========== */
+.card-title{font-weight:900}
+.card-desc{font-size:12px;color:var(--muted)}
 .hr{height:1px;background:var(--border);margin:14px 0}
-
-.input,select,textarea{
-  width:100%;
-  padding:14px;
-  border-radius:16px;
+.input,select{
+  width:100%;padding:14px;border-radius:14px;
   border:1px solid var(--border);
-  background:rgba(0,0,0,.25);
-  color:var(--text);
+  background:transparent;color:var(--text);
 }
-textarea{min-height:120px}
-.label{font-size:12px;font-weight:900;margin:10px 0 6px}
-
+.label{font-size:12px;font-weight:800;margin:8px 0 6px}
 .btn{
-  border:none;
-  border-radius:14px;
-  padding:12px 14px;
-  font-weight:900;
-  cursor:pointer;
-  color:#fff;
+  padding:12px 14px;border:none;border-radius:14px;
+  font-weight:800;cursor:pointer;
   background:linear-gradient(135deg,var(--primary),var(--primary2));
-}
-.btn.secondary{
-  background:rgba(255,255,255,.18);
   color:#fff;
-  border:1px solid var(--border);
 }
-.btn.danger{
-  background:linear-gradient(135deg,#ef4444,#b91c1c);
-}
-.btn.sm{padding:10px 12px;font-size:13px}
+.btn.secondary{background:transparent;border:1px solid var(--border)}
+.btn.danger{background:linear-gradient(135deg,#ef4444,#b91c1c)}
+.btn.sm{padding:10px;font-size:13px}
 
-.notice{
-  margin-top:10px;
-  padding:10px 12px;
-  border-radius:14px;
-  background:rgba(34,197,94,.18);
-  font-size:12px;
-  font-weight:800;
-  display:none;
-  justify-content:space-between;
-}
+/* ===== Focus Mode ===== */
+.focus .accordion:not(#secAddEdit){display:none}
 
-.stat{
-  padding:14px;
-  border-radius:16px;
-  border:1px solid var(--border);
-  background:rgba(255,255,255,.12);
-}
-.stat .k{font-size:12px;font-weight:900;color:var(--muted)}
-.stat .v{font-size:22px;font-weight:1100}
-
-.expense{
-  border:1px solid var(--border);
-  border-radius:16px;
-  padding:14px;
-  background:rgba(255,255,255,.1);
-  margin-bottom:12px;
-}
-.actions{display:flex;gap:10px;margin-top:10px}
-.actions .btn{flex:1}
+/* ===== Chart ===== */
+canvas{width:100%;max-height:260px}
 </style>
 </head>
 
 <body>
-
 <div class="container">
+
+<!-- ACTION BAR -->
+<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+  <button class="btn sm secondary" onclick="toggleTheme()">🌗 نهار / ليل</button>
+  <button class="btn sm secondary" onclick="toggleFocus()">👁️‍🗨️ وضع التركيز</button>
+</div>
+
 <div class="layout">
 
-<!-- ===== SIDEBAR ===== -->
+<!-- SIDEBAR -->
 <div>
 
 <div class="card accordion" id="secNotes">
-  <div class="card-header" onclick="toggleAccordionById('secNotes')">
+  <div class="card-header" onclick="toggleAccordion('secNotes')">
     <div>
-      <div class="card-title">📝 ملاحظات المشروع</div>
-      <div class="card-desc">ملاحظات عامة</div>
-    </div>
-    <div class="arrow">⬇️</div>
+      <div class="card-title">📝 ملاحظات</div>
+      <div class="card-desc">ملاحظات المشروع</div>
+    </div><div class="arrow">⬇️</div>
   </div>
   <div class="accordion-content">
     <textarea id="projectNotes" class="input"></textarea>
-    <div style="margin-top:10px;display:flex;gap:10px">
-      <button class="btn sm" onclick="saveNotes()">💾 حفظ</button>
-      <button class="btn sm secondary" onclick="loadNotes()">↻ تحديث</button>
-    </div>
-    <div id="notesStatus" class="notice">
-      <span>تم الحفظ</span><span id="notesStatusTime"></span>
-    </div>
+    <button class="btn sm" onclick="saveNotes()">💾 حفظ</button>
   </div>
 </div>
 
-<div style="height:14px"></div>
+<div style="height:12px"></div>
 
 <div class="card accordion" id="secCats">
-  <div class="card-header" onclick="toggleAccordionById('secCats')">
+  <div class="card-header" onclick="toggleAccordion('secCats')">
     <div>
-      <div class="card-title">📦 إدارة البنود</div>
-      <div class="card-desc">إضافة وحذف البنود</div>
-    </div>
-    <div class="arrow">⬇️</div>
+      <div class="card-title">📦 البنود</div>
+      <div class="card-desc">إدارة البنود</div>
+    </div><div class="arrow">⬇️</div>
   </div>
   <div class="accordion-content">
-    <label class="label">إضافة بند</label>
-    <input id="newCategoryName" class="input">
-    <div style="margin-top:10px;display:flex;gap:10px">
-      <button class="btn sm" onclick="addCategory()">➕ إضافة</button>
-      <button class="btn sm secondary" onclick="loadCategories()">↻ تحديث</button>
-    </div>
+    <input id="newCategoryName" class="input" placeholder="اسم البند">
+    <button class="btn sm" onclick="addCategory()">➕ إضافة</button>
     <div class="hr"></div>
     <div id="categoriesList"></div>
   </div>
@@ -202,17 +130,15 @@ textarea{min-height:120px}
 
 </div>
 
-<!-- ===== MAIN ===== -->
+<!-- MAIN -->
 <div>
 
-<!-- ADD / EDIT (OPEN DEFAULT) -->
 <div class="card accordion open" id="secAddEdit">
-  <div class="card-header" onclick="toggleAccordionById('secAddEdit')">
+  <div class="card-header" onclick="toggleAccordion('secAddEdit')">
     <div>
-      <div class="card-title">➕ إضافة / تعديل مصروف</div>
+      <div class="card-title">➕ إضافة مصروف</div>
       <div class="card-desc">القسم الرئيسي</div>
-    </div>
-    <div class="arrow">⬇️</div>
+    </div><div class="arrow">⬇️</div>
   </div>
   <div class="accordion-content">
     <form id="expenseForm">
@@ -222,51 +148,33 @@ textarea{min-height:120px}
       <select id="categorySelect" class="input"></select>
       <label class="label">المبلغ</label>
       <input type="number" id="amount" class="input">
-      <label class="label">المورد</label>
-      <input type="text" id="vendor" class="input">
-      <label class="label">الوصف</label>
-      <input type="text" id="description" class="input">
-      <div style="margin-top:12px;display:flex;gap:10px">
-        <button class="btn sm">💾 حفظ</button>
-        <button type="button" class="btn sm secondary" onclick="resetForm()">✖ إلغاء</button>
-      </div>
-      <div id="saveStatus" class="notice">
-        <span id="saveStatusText"></span><span id="saveStatusTime"></span>
-      </div>
+      <button class="btn sm">💾 حفظ</button>
     </form>
   </div>
 </div>
 
-<div style="height:14px"></div>
+<div style="height:12px"></div>
 
-<div class="card accordion" id="secStats">
-  <div class="card-header" onclick="toggleAccordionById('secStats')">
+<div class="card accordion" id="secChart">
+  <div class="card-header" onclick="toggleAccordion('secChart')">
     <div>
-      <div class="card-title">📊 التقارير</div>
-      <div class="card-desc">المجموع والملخص</div>
-    </div>
-    <div class="arrow">⬇️</div>
+      <div class="card-title">📊 رسم شهري</div>
+      <div class="card-desc">تحليل المصاريف</div>
+    </div><div class="arrow">⬇️</div>
   </div>
   <div class="accordion-content">
-    <div class="stat">
-      <div class="k">💰 المجموع الكلي</div>
-      <div class="v" id="totalAll">0 ريال</div>
-    </div>
-    <div class="hr"></div>
-    <div id="perCategory"></div>
-    <button class="btn sm" style="margin-top:10px" onclick="exportBackup()">📥 Excel</button>
+    <canvas id="chart"></canvas>
   </div>
 </div>
 
-<div style="height:14px"></div>
+<div style="height:12px"></div>
 
 <div class="card accordion" id="secExpenses">
-  <div class="card-header" onclick="toggleAccordionById('secExpenses')">
+  <div class="card-header" onclick="toggleAccordion('secExpenses')">
     <div>
       <div class="card-title">📋 المصاريف</div>
-      <div class="card-desc">عرض المصاريف</div>
-    </div>
-    <div class="arrow">⬇️</div>
+      <div class="card-desc">عرض القائمة</div>
+    </div><div class="arrow">⬇️</div>
   </div>
   <div class="accordion-content">
     <div id="expensesList"></div>
@@ -278,124 +186,113 @@ textarea{min-height:120px}
 </div>
 
 <script>
-/* ===== Supabase ===== */
+/* ================= SUPABASE ================= */
 const sb = supabase.createClient(
   "https://iuqbkqxyjendpgtlvwem.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1cWJrcXh5amVuZHBndGx2d2VtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4MjYyOTUsImV4cCI6MjA4MDQwMjI5NX0.puUnNqutG0IuyRwJ3m8d2g4i4RkSn4kJZODCu41aBBw"
 );
 
-let cache=[], editingId=null;
+let cache=[];
 
-/* ===== iOS Accordion ===== */
-function toggleAccordionById(id){
+/* ========== IOS ACCORDION + SAVE STATE ========== */
+function toggleAccordion(id){
   document.querySelectorAll(".accordion").forEach(a=>{
     if(a.id!==id) a.classList.remove("open");
   });
-  document.getElementById(id)?.classList.toggle("open");
+  const el=document.getElementById(id);
+  el.classList.toggle("open");
+  localStorage.setItem("openSection", id);
 }
 
-/* ===== Helpers ===== */
+/* ========== THEME ========== */
+function toggleTheme(){
+  document.body.classList.toggle("light");
+  localStorage.setItem("theme",
+    document.body.classList.contains("light")?"light":"dark");
+}
+
+/* ========== FOCUS MODE ========== */
+function toggleFocus(){
+  document.body.classList.toggle("focus");
+}
+
+/* ========== DATA ========== */
 date.value=new Date().toISOString().split("T")[0];
-function now(){return new Date().toLocaleString("ar-SA")}
-function show(el,t){el.style.display="flex";t.textContent=now();setTimeout(()=>el.style.display="none",2000)}
 
-/* ===== Notes ===== */
-async function loadNotes(){
-  const {data}=await sb.from("project_notes").select("*").single();
-  if(data) projectNotes.value=data.notes||"";
-}
-async function saveNotes(){
-  await sb.from("project_notes").upsert({id:1,notes:projectNotes.value});
-  show(notesStatus,notesStatusTime);
-}
-
-/* ===== Categories ===== */
 async function loadCategories(){
   const {data}=await sb.from("categories").select("*").order("name");
-  categorySelect.innerHTML=""; categoriesList.innerHTML="";
+  categorySelect.innerHTML="";
+  categoriesList.innerHTML="";
   data.forEach(c=>{
     categorySelect.add(new Option(c.name,c.id));
-    categoriesList.innerHTML+=`
-      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-        <b>${c.name}</b>
-        <button class="btn sm danger" onclick="deleteCategory('${c.id}')">حذف</button>
-      </div>`;
+    categoriesList.innerHTML+=`<div>${c.name}</div>`;
   });
 }
+
 async function addCategory(){
   if(!newCategoryName.value) return;
   await sb.from("categories").insert({name:newCategoryName.value});
-  newCategoryName.value=""; loadCategories();
-}
-async function deleteCategory(id){
-  if(confirm("حذف البند؟")){await sb.from("categories").delete().eq("id",id);loadCategories();}
+  newCategoryName.value="";
+  loadCategories();
 }
 
-/* ===== Expenses ===== */
 async function loadExpenses(){
-  const {data}=await sb.from("expenses").select("*,categories(name)").order("expense_date",{ascending:false});
-  cache=data||[]; renderStats(); renderExpenses();
+  const {data}=await sb.from("expenses")
+    .select("expense_date,amount,categories(name)")
+    .order("expense_date");
+  cache=data||[];
+  renderExpenses();
+  drawChart();
 }
-function renderStats(){
-  let total=0, per={};
-  cache.forEach(e=>{
-    total+=Number(e.amount||0);
-    const c=e.categories?.name||"غير مصنف";
-    per[c]=(per[c]||0)+Number(e.amount||0);
-  });
-  totalAll.textContent=total.toLocaleString("ar-SA")+" ريال";
-  perCategory.innerHTML="";
-  Object.entries(per).forEach(([k,v])=>{
-    perCategory.innerHTML+=`<div>${k} — <b>${v.toLocaleString("ar-SA")} ريال</b></div>`;
-  });
-}
+
 function renderExpenses(){
   expensesList.innerHTML="";
   cache.forEach(e=>{
-    expensesList.innerHTML+=`
-      <div class="expense">
-        <b>${e.amount} ريال</b> — ${e.categories?.name||""}
-        <div style="font-size:12px">${e.expense_date}</div>
-        <div class="actions">
-          <button class="btn secondary" onclick="editExpense('${e.id}')">تعديل</button>
-          <button class="btn danger" onclick="deleteExpense('${e.id}')">حذف</button>
-        </div>
-      </div>`;
+    expensesList.innerHTML+=`<div>${e.expense_date} — ${e.amount} ريال</div>`;
   });
 }
-function editExpense(id){
-  const e=cache.find(x=>x.id===id);
-  editingId=id;
-  date.value=e.expense_date;
-  categorySelect.value=e.category_id;
-  amount.value=e.amount;
-  vendor.value=e.vendor||"";
-  description.value=e.description||"";
-  toggleAccordionById("secAddEdit");
-}
-expenseForm.onsubmit=async ev=>{
-  ev.preventDefault();
-  const p={expense_date:date.value,category_id:categorySelect.value,amount:Number(amount.value),vendor:vendor.value,description:description.value};
-  editingId?await sb.from("expenses").update(p).eq("id",editingId):await sb.from("expenses").insert(p);
-  editingId=null;expenseForm.reset();date.value=new Date().toISOString().split("T")[0];
+
+expenseForm.onsubmit=async e=>{
+  e.preventDefault();
+  await sb.from("expenses").insert({
+    expense_date:date.value,
+    category_id:categorySelect.value,
+    amount:Number(amount.value)
+  });
+  expenseForm.reset();date.value=new Date().toISOString().split("T")[0];
   loadExpenses();
-}
-async function deleteExpense(id){
-  if(confirm("حذف المصروف؟")){await sb.from("expenses").delete().eq("id",id);loadExpenses();}
-}
-function resetForm(){editingId=null;expenseForm.reset()}
+};
 
-/* ===== Excel ===== */
-async function exportBackup(){
-  const {data}=await sb.from("expenses").select("expense_date,amount,description,categories(name)");
-  const sheet=data.map(e=>({التاريخ:e.expense_date,البند:e.categories?.name,المبلغ:e.amount,الوصف:e.description}));
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(sheet),"المصاريف");
-  XLSX.writeFile(wb,"expenses.xlsx");
+/* ========== CHART ========== */
+function drawChart(){
+  const ctx=document.getElementById("chart").getContext("2d");
+  ctx.clearRect(0,0,400,300);
+  const months={};
+  cache.forEach(e=>{
+    const m=e.expense_date.slice(0,7);
+    months[m]=(months[m]||0)+Number(e.amount);
+  });
+  const keys=Object.keys(months);
+  const max=Math.max(...Object.values(months),1);
+  keys.forEach((k,i)=>{
+    const h=(months[k]/max)*200;
+    ctx.fillStyle="#60a5fa";
+    ctx.fillRect(40+i*60,240-h,30,h);
+    ctx.fillText(k,40+i*60,260);
+  });
 }
 
-/* Init */
-loadNotes(); loadCategories(); loadExpenses();
+/* INIT */
+(function(){
+  const t=localStorage.getItem("theme");
+  if(t==="light") document.body.classList.add("light");
+
+  const open=localStorage.getItem("openSection")||"secAddEdit";
+  document.getElementById(open)?.classList.add("open");
+
+  loadCategories();
+  loadExpenses();
+})();
 </script>
 
 </body>
