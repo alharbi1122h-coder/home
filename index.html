@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>مصاريف البناء</title>
 
+<!-- Supabase v2 -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- Excel (XLSX) -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
@@ -13,16 +16,20 @@
   --bg1:#0b1220;
   --bg2:#0f172a;
   --card:rgba(255,255,255,.08);
+  --card2:rgba(255,255,255,.10);
   --border:rgba(255,255,255,.12);
   --text:#e5e7eb;
   --muted:#a3a3a3;
   --primary:#4f8cff;
+  --primary2:#2563eb;
   --danger:#ef4444;
   --ok:#22c55e;
-  --shadow:0 18px 45px rgba(0,0,0,.35);
+  --shadow: 0 18px 45px rgba(0,0,0,.35);
   --radius:18px;
 }
+
 *{box-sizing:border-box}
+html,body{height:100%}
 body{
   margin:0;
   font-family:system-ui,Tahoma,Arial;
@@ -30,292 +37,873 @@ body{
   background:
     radial-gradient(1400px 900px at 10% 10%, rgba(79,140,255,.12), transparent 70%),
     radial-gradient(1000px 700px at 90% 20%, rgba(34,197,94,.08), transparent 70%),
-    linear-gradient(180deg,var(--bg1),var(--bg2));
+    radial-gradient(1300px 800px at 50% 100%, rgba(239,68,68,.06), transparent 75%),
+    linear-gradient(180deg, var(--bg1), var(--bg2));
 }
-.container{max-width:1200px;margin:auto;padding:18px}
-.layout{display:grid;gap:16px}
-@media(min-width:980px){.layout{grid-template-columns:360px 1fr}}
+
+a{color:inherit}
+.container{
+  max-width:1200px;
+  margin:0 auto;
+  padding:18px;
+}
+
+.topbar{
+  position:sticky;
+  top:0;
+  z-index:10;
+  backdrop-filter: blur(14px);
+  background: linear-gradient(180deg, rgba(15,23,42,.85), rgba(15,23,42,.55));
+  border-bottom:1px solid var(--border);
+}
+.topbar-inner{
+  max-width:1200px;
+  margin:0 auto;
+  padding:14px 18px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+}
+.logo{
+  width:40px;height:40px;border-radius:14px;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.22), transparent 45%),
+              linear-gradient(135deg, rgba(79,140,255,.95), rgba(37,99,235,.75));
+  box-shadow: 0 10px 25px rgba(79,140,255,.25);
+  display:grid;place-items:center;
+  font-weight:900;
+}
+.brand h1{
+  margin:0;
+  font-size:18px;
+  line-height:1.1;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.brand .sub{
+  font-size:12px;
+  color:rgba(229,231,235,.75);
+  margin-top:2px;
+}
+.top-actions{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.pill{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 12px;border-radius:999px;
+  background:rgba(255,255,255,.08);
+  border:1px solid var(--border);
+  font-size:12px;
+  color:rgba(229,231,235,.85);
+}
+.dot{
+  width:8px;height:8px;border-radius:999px;background:var(--ok);
+  box-shadow:0 0 0 4px rgba(34,197,94,.18);
+}
+.small-btn{
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.08);
+  color:var(--text);
+  padding:10px 12px;
+  border-radius:14px;
+  font-weight:800;
+  cursor:pointer;
+}
+.small-btn:hover{background:rgba(255,255,255,.11)}
+
+.layout{
+  display:grid;
+  gap:16px;
+  margin-top:16px;
+}
+@media(min-width:980px){
+  .layout{
+    grid-template-columns:360px 1fr;
+    align-items:start;
+  }
+}
 
 .card{
-  background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.05));
+  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
   border:1px solid var(--border);
-  border-radius:var(--radius);
-  box-shadow:var(--shadow);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
   padding:16px;
 }
+.card-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:12px;
+}
+.card-title{
+  margin:0;
+  font-size:16px;
+  font-weight:1000;
+  letter-spacing:.2px;
+}
+.card-desc{
+  margin:6px 0 0;
+  font-size:12px;
+  color:rgba(229,231,235,.68);
+  line-height:1.5;
+}
+.hr{
+  height:1px;
+  background:var(--border);
+  margin:14px 0;
+  border:none;
+}
 
-/* Accordion */
-.accordion-header{
-  cursor:pointer;
+.grid2{
+  display:grid;
+  gap:12px;
+}
+@media(min-width:760px){
+  .grid2{grid-template-columns:1fr 1fr}
+}
+
+.stat{
+  padding:14px;
+  border-radius:16px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.07);
+}
+.stat .k{font-size:12px;color:rgba(229,231,235,.72);font-weight:900;margin-bottom:8px}
+.stat .v{font-size:22px;font-weight:1100;letter-spacing:.3px}
+.stat .s{margin-top:6px;font-size:12px;color:rgba(229,231,235,.62);font-weight:700}
+
+.percat{
+  display:grid;
+  gap:10px;
+}
+.row{
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:10px;
-}
-.accordion-header:hover{opacity:.9}
-.arrow{transition:.3s;font-size:18px}
-.accordion.open .arrow{transform:rotate(180deg)}
-.accordion-content{
-  max-height:0;
-  overflow:hidden;
-  opacity:0;
-  transition:max-height .4s ease, opacity .3s ease;
-}
-.accordion.open .accordion-content{
-  max-height:3000px;
-  opacity:1;
-}
-
-.card-title{font-size:16px;font-weight:900}
-.card-desc{font-size:12px;color:rgba(229,231,235,.65);margin-top:4px}
-.hr{height:1px;background:var(--border);margin:14px 0}
-
-.input,select,textarea{
-  width:100%;
-  padding:14px;
-  border-radius:16px;
+  padding:10px 12px;
+  border-radius:14px;
   border:1px solid var(--border);
-  background:rgba(0,0,0,.2);
-  color:var(--text);
+  background:rgba(255,255,255,.06);
 }
-.label{font-size:12px;font-weight:900;margin:10px 0 6px}
-textarea{min-height:110px}
+.badge{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 10px;
+  border-radius:999px;
+  background:rgba(79,140,255,.18);
+  border:1px solid rgba(79,140,255,.35);
+  font-size:12px;
+  font-weight:1000;
+}
+.badge .mini{
+  width:8px;height:8px;border-radius:999px;background:rgba(79,140,255,.95);
+  box-shadow:0 0 0 4px rgba(79,140,255,.14);
+}
 
 .btn{
+  width:100%;
   border:none;
-  border-radius:14px;
-  padding:12px 14px;
-  font-weight:900;
+  border-radius:16px;
+  padding:14px 14px;
+  font-weight:1000;
   cursor:pointer;
   color:#fff;
-  background:linear-gradient(135deg,#4f8cff,#2563eb);
+  background: linear-gradient(135deg, rgba(79,140,255,.95), rgba(37,99,235,.82));
+  box-shadow: 0 14px 30px rgba(79,140,255,.18);
 }
-.btn.secondary{background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border)}
-.btn.danger{background:linear-gradient(135deg,#ef4444,#b91c1c)}
-.btn.sm{padding:10px 12px;font-size:13px}
+.btn:hover{filter:brightness(1.04)}
+.btn:active{transform:translateY(1px)}
+.btn.secondary{
+  background: rgba(255,255,255,.08);
+  border:1px solid var(--border);
+  color:var(--text);
+  box-shadow:none;
+}
+.btn.danger{
+  background: linear-gradient(135deg, rgba(239,68,68,.95), rgba(185,28,28,.78));
+  box-shadow: 0 14px 30px rgba(239,68,68,.16);
+}
+.btn.sm{
+  padding:10px 12px;
+  border-radius:14px;
+  width:auto;
+  font-size:13px;
+}
+.btn.inline{width:auto}
+
+.input, select, textarea{
+  width:100%;
+  padding:14px 14px;
+  border-radius:16px;
+  border:1px solid var(--border);
+  background:rgba(0,0,0,.18);
+  color:var(--text);
+  outline:none;
+  font-size:15px;
+}
+select{cursor:pointer}
+textarea{min-height:120px; resize:vertical}
+.label{
+  display:block;
+  font-size:12px;
+  font-weight:1000;
+  color:rgba(229,231,235,.78);
+  margin:10px 0 6px;
+}
 
 .notice{
   margin-top:10px;
   padding:10px 12px;
   border-radius:14px;
-  background:rgba(34,197,94,.12);
+  border:1px solid var(--border);
+  background: rgba(34,197,94,.12);
+  color: rgba(229,231,235,.88);
   font-size:12px;
   font-weight:800;
-  display:none;
+  display:flex;
+  align-items:center;
   justify-content:space-between;
+  gap:10px;
+}
+.notice .muted{color:rgba(229,231,235,.62);font-weight:800}
+
+.cat-add{
+  padding:12px;
+  border-radius:16px;
+  border:1px dashed rgba(79,140,255,.45);
+  background: rgba(79,140,255,.10);
+}
+.cat-item{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:16px;
+  border:1px solid var(--border);
+  background: rgba(255,255,255,.06);
+  margin-bottom:10px;
+}
+.cat-item .name{font-weight:1000}
+
+.expense{
+  padding:14px;
+  border-radius:18px;
+  border:1px solid var(--border);
+  background: rgba(255,255,255,.06);
+  margin-bottom:12px;
+}
+.expense-top{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin-bottom:10px;
+}
+.amount{
+  font-size:18px;
+  font-weight:1100;
+}
+.meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:8px 0 0;
+  color:rgba(229,231,235,.72);
+  font-size:12px;
+  font-weight:800;
+}
+.actions{
+  display:flex;
+  gap:10px;
+  margin-top:12px;
+}
+.actions .btn{flex:1}
+@media(max-width:520px){
+  .actions{flex-direction:column}
 }
 
-.expense{border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:12px;background:rgba(255,255,255,.05)}
-.actions{display:flex;gap:10px;margin-top:10px}
-.actions .btn{flex:1}
+footer{
+  margin:18px 0 30px;
+  text-align:center;
+  color:rgba(229,231,235,.45);
+  font-size:12px;
+  font-weight:700;
+}
+
+/* ====== Accordion (NEW) ====== */
+.accordion .card-header{
+  cursor:pointer;
+  user-select:none;
+  border-radius:14px;
+  padding:10px 10px;
+  margin:-6px -6px 10px -6px;
+}
+.accordion .card-header:hover{
+  background:rgba(255,255,255,.04);
+}
+.accordion .arrow{
+  transition: transform .25s ease, opacity .25s ease;
+  font-size:18px;
+  opacity:.9;
+  padding:6px 10px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.06);
+}
+.accordion.open .arrow{
+  transform: rotate(180deg);
+}
+.accordion-content{
+  max-height:0;
+  overflow:hidden;
+  opacity:0;
+  transition:max-height .35s ease, opacity .25s ease;
+}
+.accordion.open .accordion-content{
+  max-height:5000px;
+  opacity:1;
+}
 </style>
 </head>
 
 <body>
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="logo">🏗️</div>
+      <div style="min-width:0">
+        <h1>مصاريف البناء</h1>
+        <div class="sub">لوحة متابعة + نسخ احتياطي Excel</div>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <div class="pill"><span class="dot"></span> متصل</div>
+      <button class="small-btn" onclick="exportBackup()">📥 نسخة احتياطية Excel</button>
+    </div>
+  </div>
+</div>
 
 <div class="container">
-<div class="layout">
+  <div class="layout">
 
-<!-- ===== Sidebar ===== -->
-<div>
-
-<!-- Notes -->
-<div class="card accordion">
-  <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+    <!-- Sidebar -->
     <div>
-      <div class="card-title">📝 ملاحظات المشروع</div>
-      <div class="card-desc">ملاحظات عامة محفوظة</div>
-    </div>
-    <div class="arrow">⬇️</div>
-  </div>
-  <div class="accordion-content">
-    <textarea id="projectNotes" class="input"></textarea>
-    <div style="margin-top:10px;display:flex;gap:10px">
-      <button class="btn sm" onclick="saveNotes()">💾 حفظ</button>
-      <button class="btn sm secondary" onclick="loadNotes()">↻ تحديث</button>
-    </div>
-    <div id="notesStatus" class="notice">
-      <span>تم الحفظ</span><span id="notesStatusTime"></span>
-    </div>
-  </div>
-</div>
 
-<div style="height:14px"></div>
+      <!-- Notes (Accordion - closed by default) -->
+      <div class="card accordion" id="secNotes">
+        <div class="card-header" onclick="toggleAccordionById('secNotes')">
+          <div>
+            <div class="card-title">📝 ملاحظات المشروع</div>
+            <div class="card-desc">اكتب ملاحظات عامة (تُحفظ في قاعدة البيانات).</div>
+          </div>
+          <div class="arrow">⬇️</div>
+        </div>
 
-<!-- Categories -->
-<div class="card accordion">
-  <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
-    <div>
-      <div class="card-title">📦 إدارة البنود</div>
-      <div class="card-desc">إضافة وحذف البنود</div>
-    </div>
-    <div class="arrow">⬇️</div>
-  </div>
-  <div class="accordion-content">
-    <label class="label">إضافة بند</label>
-    <input id="newCategoryName" class="input">
-    <div style="margin-top:10px;display:flex;gap:10px">
-      <button class="btn sm" onclick="addCategory()">➕ إضافة</button>
-      <button class="btn sm secondary" onclick="loadCategories()">↻ تحديث</button>
-    </div>
-    <div class="hr"></div>
-    <div id="categoriesList"></div>
-  </div>
-</div>
+        <div class="accordion-content">
+          <textarea id="projectNotes" class="input" placeholder="مثال: تم صب السقف اليوم… / متابعة الدفعة مع المورد…"></textarea>
+          <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap">
+            <button class="btn sm inline" onclick="saveNotes()">💾 حفظ</button>
+            <button class="btn sm inline secondary" onclick="loadNotes()">↻ تحديث</button>
+          </div>
 
-</div>
-
-<!-- ===== Main ===== -->
-<div>
-
-<!-- Add/Edit Expense (OPEN by default) -->
-<div class="card accordion open">
-  <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
-    <div>
-      <div class="card-title">➕ إضافة / تعديل مصروف</div>
-      <div class="card-desc">القسم الرئيسي</div>
-    </div>
-    <div class="arrow">⬇️</div>
-  </div>
-
-  <div class="accordion-content">
-    <form id="expenseForm">
-      <label class="label">التاريخ</label>
-      <input type="date" id="date" class="input">
-
-      <label class="label">البند</label>
-      <select id="categorySelect" class="input"></select>
-
-      <label class="label">المبلغ</label>
-      <input type="number" id="amount" class="input">
-
-      <label class="label">المورد</label>
-      <input type="text" id="vendor" class="input">
-
-      <label class="label">الوصف</label>
-      <input type="text" id="description" class="input">
-
-      <div style="margin-top:12px;display:flex;gap:10px">
-        <button class="btn sm">💾 حفظ</button>
-        <button type="button" class="btn sm secondary" onclick="resetForm()">✖ إلغاء</button>
+          <div id="notesStatus" class="notice" style="display:none">
+            <span>تم الحفظ</span><span class="muted" id="notesStatusTime">—</span>
+          </div>
+        </div>
       </div>
 
-      <div id="saveStatus" class="notice">
-        <span id="saveStatusText"></span><span id="saveStatusTime"></span>
+      <div style="height:14px"></div>
+
+      <!-- Categories (Accordion - closed by default) -->
+      <div class="card accordion" id="secCats">
+        <div class="card-header" onclick="toggleAccordionById('secCats')">
+          <div>
+            <div class="card-title">📦 إدارة البنود</div>
+            <div class="card-desc">أضف بند جديد أو احذف بند (إذا كان مرتبط بمصاريف لن يسمح بالحذف).</div>
+          </div>
+          <div class="arrow">⬇️</div>
+        </div>
+
+        <div class="accordion-content">
+          <div class="cat-add">
+            <label class="label">إضافة بند جديد</label>
+            <input id="newCategoryName" class="input" placeholder="مثال: خرسانة، سباكة، كهرباء">
+            <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap">
+              <button class="btn sm inline" type="button" onclick="addCategory()">➕ إضافة البند</button>
+              <button class="btn sm inline secondary" type="button" onclick="loadCategories()">↻ تحديث القائمة</button>
+            </div>
+          </div>
+
+          <div class="hr"></div>
+          <div id="categoriesList"></div>
+        </div>
       </div>
-    </form>
+
+    </div>
+
+    <!-- Main -->
+    <div>
+
+      <!-- Stats (Accordion - closed by default) -->
+      <div class="card accordion" id="secStats">
+        <div class="card-header" onclick="toggleAccordionById('secStats')">
+          <div>
+            <div class="card-title">📊 التقارير السريعة</div>
+            <div class="card-desc">المجموع الكلي ومجموع كل بند (يُحدّث تلقائياً).</div>
+          </div>
+
+          <!-- زر تحديث داخل الهيدر: منع إغلاق/فتح الأكورديون -->
+          <button class="btn sm inline secondary"
+                  onclick="event.stopPropagation(); loadExpenses();">↻ تحديث</button>
+
+          <div class="arrow" style="margin-right:8px">⬇️</div>
+        </div>
+
+        <div class="accordion-content">
+
+          <div class="grid2">
+            <div class="stat">
+              <div class="k">💰 المجموع الكلي</div>
+              <div class="v" id="totalAll">0 ريال</div>
+              <div class="s" id="itemsCount">—</div>
+            </div>
+
+            <div class="stat">
+              <div class="k">📥 النسخ الاحتياطي</div>
+              <div class="v" style="font-size:14px; font-weight:1000; line-height:1.6">
+                حمّل ملف Excel يحتوي المصاريف + البنود + الملخص
+              </div>
+              <div style="margin-top:10px">
+                <button class="btn sm inline" onclick="exportBackup()">📥 تنزيل الآن</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="hr"></div>
+          <div class="card-title" style="font-size:14px; margin-bottom:10px">📦 مجموع كل بند</div>
+          <div id="perCategory" class="percat"></div>
+
+        </div>
+      </div>
+
+      <div style="height:12px"></div>
+
+      <!-- Add/Edit (Accordion - OPEN by default) -->
+      <div class="card accordion open" id="secAddEdit">
+        <div class="card-header" onclick="toggleAccordionById('secAddEdit')">
+          <div>
+            <div class="card-title">➕ إضافة / تعديل مصروف</div>
+            <div class="card-desc">أضف مصروف جديد أو عدّل مصروف موجود (يُحفظ مباشرة).</div>
+          </div>
+
+          <!-- زر إلغاء داخل الهيدر: منع إغلاق/فتح الأكورديون -->
+          <button class="btn sm inline danger"
+                  onclick="event.stopPropagation(); resetForm();">✖ إلغاء التعديل</button>
+
+          <div class="arrow" style="margin-right:8px">⬇️</div>
+        </div>
+
+        <div class="accordion-content">
+          <form id="expenseForm">
+            <label class="label">التاريخ</label>
+            <input type="date" id="date" class="input" required>
+
+            <label class="label">البند</label>
+            <select id="categorySelect" class="input" required></select>
+
+            <div class="grid2">
+              <div>
+                <label class="label">المبلغ</label>
+                <input type="number" id="amount" class="input" required placeholder="مثال: 1200">
+              </div>
+              <div>
+                <label class="label">المورد</label>
+                <input type="text" id="vendor" class="input" placeholder="مثال: مؤسسة فلان">
+              </div>
+            </div>
+
+            <label class="label">الوصف</label>
+            <input type="text" id="description" class="input" placeholder="مثال: صبة خرسانة للدور الأرضي">
+
+            <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap">
+              <button class="btn sm inline" type="submit">💾 حفظ المصروف</button>
+              <button class="btn sm inline secondary" type="button" onclick="scrollToExpenses()">⬇️ إلى قائمة المصاريف</button>
+            </div>
+
+            <div id="saveStatus" class="notice" style="display:none; background: rgba(79,140,255,.12)">
+              <span id="saveStatusText">تم الحفظ</span><span class="muted" id="saveStatusTime">—</span>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div style="height:16px"></div>
+
+      <!-- Expenses list (Accordion - closed by default مثل إدارة البنود) -->
+      <div class="card accordion" id="secExpenses">
+        <div class="card-header" onclick="toggleAccordionById('secExpenses')">
+          <div>
+            <div class="card-title">📋 المصاريف</div>
+            <div class="card-desc">عرض المصاريف كبطاقات مناسبة للجوال مع أزرار تعديل/حذف.</div>
+          </div>
+
+          <div style="display:flex; gap:10px; flex-wrap:wrap">
+            <button class="btn sm inline secondary"
+                    onclick="event.stopPropagation(); loadExpenses();">↻ تحديث</button>
+            <button class="btn sm inline"
+                    onclick="event.stopPropagation(); exportBackup();">📥 Excel</button>
+          </div>
+
+          <div class="arrow" style="margin-right:8px">⬇️</div>
+        </div>
+
+        <div class="accordion-content">
+          <div id="expensesList"></div>
+        </div>
+      </div>
+
+      <footer>© 2مصاريف البناء — نسخة بسيطة قابلة للتطوير</footer>
+    </div>
+
   </div>
-</div>
-
-<div style="height:16px"></div>
-
-<!-- Expenses -->
-<div class="card">
-  <div class="card-title">📋 المصاريف</div>
-  <div id="expensesList" style="margin-top:12px"></div>
-</div>
-
-</div>
-</div>
 </div>
 
 <script>
-/* === Supabase config === */
-const sb = supabase.createClient(
-  "https://iuqbkqxyjendpgtlvwem.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1cWJrcXh5amVuZHBndGx2d2VtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4MjYyOTUsImV4cCI6MjA4MDQwMjI5NX0.puUnNqutG0IuyRwJ3m8d2g4i4RkSn4kJZODCu41aBBw"
-);
+/* ===== Supabase ===== */
+const SUPABASE_URL="https://iuqbkqxyjendpgtlvwem.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1cWJrcXh5amVuZHBndGx2d2VtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4MjYyOTUsImV4cCI6MjA4MDQwMjI5NX0.puUnNqutG0IuyRwJ3m8d2g4i4RkSn4kJZODCu41aBBw";
 
-let cache=[], editingId=null;
-date.value = new Date().toISOString().split("T")[0];
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function now(){return new Date().toLocaleString("ar-SA")}
-function show(el,t){el.style.display="flex";t.textContent=now();setTimeout(()=>el.style.display="none",2000)}
+let cache = [];
+let editingId = null;
 
-/* Notes */
+/* ===== Accordion Helpers (NEW) ===== */
+function toggleAccordionById(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.classList.toggle("open");
+}
+
+/* ===== Helpers ===== */
+function todayISO(){ return new Date().toISOString().split("T")[0]; }
+function nowTime(){
+  const d = new Date();
+  return d.toLocaleString("ar-SA", { hour12:true });
+}
+function fmtSAR(n){
+  const x = Number(n || 0);
+  return x.toLocaleString("ar-SA") + " ريال";
+}
+function showNotice(el, timeEl){
+  el.style.display = "flex";
+  timeEl.textContent = nowTime();
+  setTimeout(()=>{ el.style.display = "none"; }, 2200);
+}
+function scrollToExpenses(){
+  document.getElementById("secExpenses").scrollIntoView({behavior:"smooth", block:"start"});
+  // افتح قسم المصاريف تلقائياً عند النزول (تحسين لطيف)
+  document.getElementById("secExpenses")?.classList.add("open");
+}
+function resetForm(){
+  editingId = null;
+  expenseForm.reset();
+  date.value = todayISO();
+  saveStatus.style.display="none";
+}
+
+/* ===== Notes ===== */
 async function loadNotes(){
-  const {data}=await sb.from("project_notes").select("*").single();
-  if(data) projectNotes.value=data.notes||"";
+  const { data, error } = await sb.from("project_notes").select("*").limit(1).single();
+  if(error){ console.error(error); return; }
+  if(data) projectNotes.value = data.notes || "";
 }
 async function saveNotes(){
-  await sb.from("project_notes").upsert({id:1,notes:projectNotes.value});
-  show(notesStatus,notesStatusTime);
+  const { error } = await sb.from("project_notes").upsert({ id:1, notes: projectNotes.value });
+  if(error){ console.error(error); alert("تعذر حفظ الملاحظات"); return; }
+  showNotice(notesStatus, notesStatusTime);
 }
 
-/* Categories */
+/* ===== Categories ===== */
 async function loadCategories(){
-  const {data}=await sb.from("categories").select("*").order("name");
-  categorySelect.innerHTML=""; categoriesList.innerHTML="";
+  const { data, error } = await sb.from("categories").select("*").order("name");
+  if(error){ console.error(error); return; }
+
+  categorySelect.innerHTML = "";
+  categoriesList.innerHTML = "";
+
   data.forEach(c=>{
-    categorySelect.add(new Option(c.name,c.id));
-    categoriesList.innerHTML+=`
-      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-        <b>${c.name}</b>
-        <button class="btn sm danger" onclick="deleteCategory('${c.id}')">حذف</button>
-      </div>`;
-  });
-}
-async function addCategory(){
-  if(!newCategoryName.value) return;
-  await sb.from("categories").insert({name:newCategoryName.value});
-  newCategoryName.value=""; loadCategories();
-}
-async function deleteCategory(id){
-  if(confirm("حذف البند؟")){await sb.from("categories").delete().eq("id",id);loadCategories();}
-}
-
-/* Expenses */
-async function loadExpenses(){
-  const {data}=await sb.from("expenses").select("*,categories(name)").order("expense_date",{ascending:false});
-  cache=data||[]; renderExpenses();
-}
-function renderExpenses(){
-  expensesList.innerHTML="";
-  cache.forEach(e=>{
-    expensesList.innerHTML+=`
-    <div class="expense">
-      <b>${e.amount} ريال</b> — ${e.categories?.name||""}
-      <div style="font-size:12px;margin-top:6px">${e.expense_date}</div>
-      <div class="actions">
-        <button class="btn secondary" onclick="editExpense('${e.id}')">تعديل</button>
-        <button class="btn danger" onclick="deleteExpense('${e.id}')">حذف</button>
+    categorySelect.add(new Option(c.name, c.id));
+    categoriesList.innerHTML += `
+      <div class="cat-item">
+        <div class="name">📌 ${escapeHtml(c.name)}</div>
+        <button class="btn sm inline danger" onclick="deleteCategory('${c.id}')">🗑️ حذف</button>
       </div>
+    `;
+  });
+
+  if(!data.length){
+    categoriesList.innerHTML = `<div style="color:rgba(229,231,235,.65);font-weight:800;font-size:13px">
+      لا يوجد بنود… أضف بند من الأعلى.
     </div>`;
+  }
+}
+
+async function addCategory(){
+  const name = (newCategoryName.value || "").trim();
+  if(!name) return alert("اكتب اسم البند");
+
+  const { error } = await sb.from("categories").insert({ name });
+  if(error){
+    console.error(error);
+    return alert("تعذر إضافة البند (ربما موجود مسبقاً)");
+  }
+
+  newCategoryName.value = "";
+  await loadCategories();
+}
+
+async function deleteCategory(id){
+  if(!confirm("هل أنت متأكد من حذف البند؟")) return;
+  const { error } = await sb.from("categories").delete().eq("id", id);
+  if(error){
+    console.error(error);
+    return alert("لا يمكن حذف بند مرتبط بمصاريف");
+  }
+  await loadCategories();
+}
+
+/* ===== Stats ===== */
+function renderStats(){
+  const total = cache.reduce((s,e)=> s + Number(e.amount || 0), 0);
+  totalAll.textContent = fmtSAR(total);
+  itemsCount.textContent = `عدد العمليات: ${cache.length}`;
+
+  const per = {};
+  cache.forEach(e=>{
+    const cat = e.categories?.name || "غير مصنف";
+    per[cat] = (per[cat] || 0) + Number(e.amount || 0);
+  });
+
+  const rows = Object.entries(per).sort((a,b)=> b[1]-a[1]);
+
+  perCategory.innerHTML = "";
+  if(!rows.length){
+    perCategory.innerHTML = `<div style="color:rgba(229,231,235,.65);font-weight:900;font-size:13px">
+      لا توجد بيانات بعد.
+    </div>`;
+    return;
+  }
+
+  rows.forEach(([name,sum])=>{
+    perCategory.innerHTML += `
+      <div class="row">
+        <span class="badge"><span class="mini"></span>${escapeHtml(name)}</span>
+        <b style="font-weight:1100">${fmtSAR(sum)}</b>
+      </div>
+    `;
   });
 }
-function editExpense(id){
-  const e=cache.find(x=>x.id===id);
-  editingId=id;
-  date.value=e.expense_date;
-  categorySelect.value=e.category_id;
-  amount.value=e.amount;
-  vendor.value=e.vendor||"";
-  description.value=e.description||"";
-}
-expenseForm.onsubmit=async e=>{
-  e.preventDefault();
-  const payload={
-    expense_date:date.value,
-    category_id:categorySelect.value,
-    amount:Number(amount.value),
-    vendor:vendor.value,
-    description:description.value
-  };
-  editingId
-    ? await sb.from("expenses").update(payload).eq("id",editingId)
-    : await sb.from("expenses").insert(payload);
-  editingId=null; expenseForm.reset(); date.value=new Date().toISOString().split("T")[0];
-  loadExpenses();
-}
-async function deleteExpense(id){
-  if(confirm("حذف المصروف؟")){await sb.from("expenses").delete().eq("id",id);loadExpenses();}
-}
-function resetForm(){editingId=null;expenseForm.reset()}
 
-/* Init */
-loadNotes(); loadCategories(); loadExpenses();
+/* ===== Expenses ===== */
+async function loadExpenses(){
+  const { data, error } = await sb
+    .from("expenses")
+    .select("*,categories(name)")
+    .order("expense_date", { ascending:false });
+
+  if(error){ console.error(error); alert("تعذر تحميل المصاريف"); return; }
+
+  cache = data || [];
+  renderStats();
+  renderExpensesList();
+}
+
+function renderExpensesList(){
+  expensesList.innerHTML = "";
+
+  if(!cache.length){
+    expensesList.innerHTML = `<div style="color:rgba(229,231,235,.65);font-weight:900;font-size:13px">
+      لا توجد مصاريف… ابدأ بإضافة أول مصروف من الأعلى.
+    </div>`;
+    return;
+  }
+
+  cache.forEach(e=>{
+    expensesList.innerHTML += `
+      <div class="expense">
+        <div class="expense-top">
+          <div class="amount">${fmtSAR(e.amount)}</div>
+          <div class="badge"><span class="mini"></span>${escapeHtml(e.categories?.name || "")}</div>
+        </div>
+
+        <div class="meta">
+          <span>📅 ${escapeHtml(e.expense_date || "")}</span>
+          ${e.vendor ? `<span>🏷️ ${escapeHtml(e.vendor)}</span>` : ``}
+        </div>
+
+        ${e.description ? `<div style="margin-top:10px;color:rgba(229,231,235,.8);font-weight:800">
+          ${escapeHtml(e.description)}
+        </div>` : ``}
+
+        <div class="actions">
+          <button class="btn secondary" onclick="editExpense('${e.id}')">✏️ تعديل</button>
+          <button class="btn danger" onclick="deleteExpense('${e.id}')">🗑️ حذف</button>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function editExpense(id){
+  const e = cache.find(x=>x.id===id);
+  if(!e) return;
+  editingId = id;
+  date.value = e.expense_date || todayISO();
+  categorySelect.value = e.category_id;
+  amount.value = e.amount;
+  vendor.value = e.vendor || "";
+  description.value = e.description || "";
+
+  saveStatusText.textContent = "وضع التعديل مفعل — احفظ لتحديث المصروف";
+  saveStatus.style.display = "flex";
+  saveStatusTime.textContent = nowTime();
+
+  // افتح قسم الإضافة/التعديل لو كان مقفل
+  document.getElementById("secAddEdit")?.classList.add("open");
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+expenseForm.addEventListener("submit", async (ev)=>{
+  ev.preventDefault();
+
+  const payload = {
+    expense_date: date.value,
+    category_id: categorySelect.value,
+    amount: Number(amount.value),
+    vendor: vendor.value,
+    description: description.value
+  };
+
+  let error = null;
+
+  if(editingId){
+    ({ error } = await sb.from("expenses").update(payload).eq("id", editingId));
+  } else {
+    ({ error } = await sb.from("expenses").insert(payload));
+  }
+
+  if(error){
+    console.error(error);
+    alert("تعذر الحفظ");
+    return;
+  }
+
+  saveStatusText.textContent = editingId ? "✅ تم تحديث المصروف" : "✅ تم إضافة المصروف";
+  showNotice(saveStatus, saveStatusTime);
+
+  editingId = null;
+  expenseForm.reset();
+  date.value = todayISO();
+  await loadExpenses();
+});
+
+async function deleteExpense(id){
+  if(!confirm("حذف المصروف؟")) return;
+  const { error } = await sb.from("expenses").delete().eq("id", id);
+  if(error){
+    console.error(error);
+    alert("تعذر حذف المصروف");
+    return;
+  }
+  await loadExpenses();
+}
+
+/* ===== Excel Backup (3 Sheets) ===== */
+async function exportBackup(){
+  const { data: expenses, error: eErr } = await sb
+    .from("expenses")
+    .select("expense_date, amount, vendor, description, categories(name)")
+    .order("expense_date", { ascending:true });
+
+  if(eErr){ console.error(eErr); return alert("تعذر تجهيز النسخة الاحتياطية"); }
+
+  const { data: categories, error: cErr } = await sb
+    .from("categories")
+    .select("name")
+    .order("name");
+
+  if(cErr){ console.error(cErr); return alert("تعذر تجهيز البنود للنسخة الاحتياطية"); }
+
+  const expensesSheet = (expenses || []).map(e=>({
+    التاريخ: e.expense_date,
+    البند: e.categories?.name || "",
+    المبلغ: e.amount,
+    المورد: e.vendor || "",
+    الوصف: e.description || ""
+  }));
+
+  const categoriesSheet = (categories || []).map(c=>({ البند: c.name }));
+
+  const summary = {};
+  let total = 0;
+  (expenses || []).forEach(e=>{
+    const cat = e.categories?.name || "غير مصنف";
+    total += Number(e.amount || 0);
+    summary[cat] = (summary[cat] || 0) + Number(e.amount || 0);
+  });
+
+  const summarySheet = [{ البيان: "المجموع الكلي", القيمة: total }];
+  Object.entries(summary)
+    .sort((a,b)=> b[1]-a[1])
+    .forEach(([k,v])=> summarySheet.push({ البيان: k, القيمة: v }));
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(expensesSheet), "المصاريف");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(categoriesSheet), "البنود");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summarySheet), "الملخص");
+
+  const today = todayISO();
+  XLSX.writeFile(wb, `backup-building-expenses-${today}.xlsx`);
+}
+
+/* ===== Security ===== */
+function escapeHtml(str){
+  const s = String(str ?? "");
+  return s
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+/* ===== Init ===== */
+document.addEventListener("DOMContentLoaded", async ()=>{
+  date.value = todayISO();
+  await loadNotes();
+  await loadCategories();
+  await loadExpenses();
+
+  // افتراضي: افتح الإضافة/التعديل فقط (موجود open في HTML)
+  // والباقي مقفل.
+});
 </script>
 
 </body>
 </html>
-
