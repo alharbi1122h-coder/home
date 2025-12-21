@@ -9,13 +9,12 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
-/* ================= THEME ================= */
 :root{
   --bg1:#111827; --bg2:#1f2937;
   --card:#ffffff22; --border:#ffffff33;
   --text:#f9fafb; --muted:#cbd5e1;
   --primary:#60a5fa; --primary2:#3b82f6;
-  --danger:#ef4444; --ok:#22c55e;
+  --danger:#ef4444;
   --radius:18px;
 }
 .light{
@@ -42,7 +41,7 @@ body{
   backdrop-filter:blur(12px);
 }
 
-/* ===== Accordion (iOS style) ===== */
+/* Accordion (iOS style) */
 .accordion .card-header{
   display:flex;justify-content:space-between;
   cursor:pointer;align-items:flex-start;
@@ -54,10 +53,10 @@ body{
   transition:.35s;
 }
 .accordion.open .accordion-content{
-  max-height:8000px;opacity:1;
+  max-height:10000px;opacity:1;
 }
 
-/* ===== UI ===== */
+/* UI */
 .card-title{font-weight:900;font-size:16px}
 .card-desc{font-size:12px;color:var(--muted)}
 .hr{height:1px;background:var(--border);margin:14px 0}
@@ -79,10 +78,10 @@ textarea{min-height:120px}
 .btn.danger{background:linear-gradient(135deg,#ef4444,#b91c1c)}
 .btn.sm{padding:10px;font-size:13px}
 
-/* ===== Focus Mode ===== */
+/* Focus Mode */
 .focus .accordion:not(#secAddEdit){display:none}
 
-/* ===== Stats ===== */
+/* Stats */
 .stat{
   border:1px solid var(--border);
   border-radius:14px;
@@ -92,7 +91,7 @@ textarea{min-height:120px}
 .stat .k{font-size:12px;color:var(--muted);font-weight:800}
 .stat .v{font-size:22px;font-weight:900}
 
-/* ===== Expenses ===== */
+/* Expenses */
 .expense{
   border:1px solid var(--border);
   border-radius:14px;
@@ -108,7 +107,7 @@ textarea{min-height:120px}
 .actions{display:flex;gap:8px;margin-top:8px}
 .actions .btn{flex:1}
 
-/* ===== Bigger project notes ===== */
+/* Bigger project notes */
 #projectNotes{
   font-size:17px;
   line-height:1.8;
@@ -131,23 +130,21 @@ textarea{min-height:120px}
 <!-- SIDEBAR -->
 <div>
 
-<!-- Project Notes -->
 <div class="card accordion" id="secNotes">
   <div class="card-header" onclick="toggleAccordion('secNotes')">
     <div>
       <div class="card-title">📝 ملاحظات المشروع</div>
-      <div class="card-desc">ملاحظات عامة بخط كبير وواضح</div>
+      <div class="card-desc">ملاحظات عامة</div>
     </div><div class="arrow">⬇️</div>
   </div>
   <div class="accordion-content">
     <textarea id="projectNotes" class="input"></textarea>
-    <button class="btn sm" onclick="saveNotes()">💾 حفظ الملاحظات</button>
+    <button class="btn sm" onclick="saveNotes()">💾 حفظ</button>
   </div>
 </div>
 
 <div style="height:12px"></div>
 
-<!-- Categories -->
 <div class="card accordion" id="secCats">
   <div class="card-header" onclick="toggleAccordion('secCats')">
     <div>
@@ -176,15 +173,41 @@ textarea{min-height:120px}
       <div class="card-desc">المجموع الكلي + مجموع كل بند</div>
     </div><div class="arrow">⬇️</div>
   </div>
-
   <div class="accordion-content">
     <div class="stat">
       <div class="k">💰 المجموع الكلي</div>
       <div class="v" id="totalAll">0 ريال</div>
     </div>
-
     <div class="hr"></div>
     <div id="perCategory"></div>
+  </div>
+</div>
+
+<div style="height:12px"></div>
+
+<!-- 🆕 Category Details -->
+<div class="card accordion" id="secCategoryDetails">
+  <div class="card-header" onclick="toggleAccordion('secCategoryDetails')">
+    <div>
+      <div class="card-title">📂 تفاصيل مصاريف بند</div>
+      <div class="card-desc">عرض جميع مصاريف بند معيّن مع مجموعه</div>
+    </div><div class="arrow">⬇️</div>
+  </div>
+
+  <div class="accordion-content">
+    <label class="label">اختر البند</label>
+    <select id="categoryDetailsSelect" class="input" onchange="renderCategoryDetails()">
+      <option value="">— اختر بند —</option>
+    </select>
+
+    <div class="hr"></div>
+
+    <div id="categoryTotal" class="stat" style="display:none;margin-bottom:10px">
+      <div class="k">💰 مجموع البند</div>
+      <div class="v" id="categoryTotalValue">0 ريال</div>
+    </div>
+
+    <div id="categoryExpensesList"></div>
   </div>
 </div>
 
@@ -249,7 +272,7 @@ const sb = supabase.createClient(
 
 let cache=[], editingId=null;
 
-/* ===== Accordion iOS ===== */
+/* Accordion iOS */
 function toggleAccordion(id){
   document.querySelectorAll(".accordion").forEach(a=>{
     if(a.id!==id) a.classList.remove("open");
@@ -258,7 +281,7 @@ function toggleAccordion(id){
   localStorage.setItem("openSection",id);
 }
 
-/* ===== Theme / Focus ===== */
+/* Theme / Focus */
 function toggleTheme(){
   document.body.classList.toggle("light");
   localStorage.setItem("theme",
@@ -268,10 +291,10 @@ function toggleFocus(){
   document.body.classList.toggle("focus");
 }
 
-/* ===== Helpers ===== */
+/* Helpers */
 date.value=new Date().toISOString().split("T")[0];
 
-/* ===== Notes ===== */
+/* Notes */
 async function saveNotes(){
   await sb.from("project_notes").upsert({id:1,notes:projectNotes.value});
 }
@@ -280,13 +303,19 @@ async function loadNotes(){
   if(data) projectNotes.value=data.notes||"";
 }
 
-/* ===== Categories ===== */
+/* Categories */
 async function loadCategories(){
   const {data}=await sb.from("categories").select("*").order("name");
+
   categorySelect.innerHTML="";
   categoriesList.innerHTML="";
+  categoryDetailsSelect.innerHTML =
+    `<option value="">— اختر بند —</option>`;
+
   data.forEach(c=>{
     categorySelect.add(new Option(c.name,c.id));
+    categoryDetailsSelect.innerHTML +=
+      `<option value="${c.id}">${c.name}</option>`;
     categoriesList.innerHTML+=`<div>${c.name}</div>`;
   });
 }
@@ -297,7 +326,7 @@ async function addCategory(){
   loadCategories();
 }
 
-/* ===== Expenses ===== */
+/* Expenses */
 async function loadExpenses(){
   const {data}=await sb.from("expenses")
     .select("*,categories(name)")
@@ -305,6 +334,7 @@ async function loadExpenses(){
   cache=data||[];
   renderStats();
   renderExpenses();
+  renderCategoryDetails(); // تحديث لو كان بند مختار
 }
 
 function renderStats(){
@@ -318,8 +348,8 @@ function renderStats(){
 
   perCategory.innerHTML="";
   Object.entries(per).forEach(([k,v])=>{
-    perCategory.innerHTML+=`
-      <div class="meta">📦 ${k} — <b>${v.toLocaleString("ar-SA")} ريال</b></div>`;
+    perCategory.innerHTML+=
+      `<div class="meta">📦 ${k} — <b>${v.toLocaleString("ar-SA")} ريال</b></div>`;
   });
 }
 
@@ -341,6 +371,40 @@ function renderExpenses(){
         </div>
       </div>`;
   });
+}
+
+/* 🆕 Category Details Logic */
+function renderCategoryDetails(){
+  const catId = categoryDetailsSelect.value;
+  categoryExpensesList.innerHTML="";
+  categoryTotal.style.display="none";
+  if(!catId) return;
+
+  const filtered = cache.filter(e => e.category_id === catId);
+  if(!filtered.length){
+    categoryExpensesList.innerHTML =
+      `<div class="meta">لا توجد مصاريف لهذا البند.</div>`;
+    return;
+  }
+
+  let total = 0;
+  filtered.forEach(e=>{
+    total += Number(e.amount||0);
+    categoryExpensesList.innerHTML += `
+      <div class="expense">
+        <div class="top">
+          <span>${e.amount} ريال</span>
+          <span>${e.expense_date}</span>
+        </div>
+        ${e.vendor?`<div class="meta">🏷️ ${e.vendor}</div>`:""}
+        ${e.description?`<div class="meta">📝 ${e.description}</div>`:""}
+      </div>
+    `;
+  });
+
+  categoryTotalValue.textContent =
+    total.toLocaleString("ar-SA") + " ريال";
+  categoryTotal.style.display="block";
 }
 
 function editExpense(id){
@@ -379,7 +443,7 @@ async function deleteExpense(id){
   }
 }
 
-/* ===== Excel Backup ===== */
+/* Excel Backup */
 async function exportBackup(){
   const {data}=await sb.from("expenses")
     .select("expense_date,amount,vendor,description,categories(name)");
@@ -395,7 +459,7 @@ async function exportBackup(){
   XLSX.writeFile(wb,"backup-building-expenses.xlsx");
 }
 
-/* ===== INIT ===== */
+/* INIT */
 (function(){
   if(localStorage.getItem("theme")==="light")
     document.body.classList.add("light");
